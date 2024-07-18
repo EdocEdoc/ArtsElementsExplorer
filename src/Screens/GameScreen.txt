@@ -1,0 +1,389 @@
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  Caption,
+  Headline,
+  Subheading,
+  Surface,
+  Title,
+} from "react-native-paper";
+import Spacer from "../components/Spacer";
+import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
+import { useAppContext } from "../Contexts/AppContext";
+import { Picker } from "@react-native-picker/picker";
+import SketchPad from "../components/SketchPad";
+import Canvas from "../components/Canvas";
+import { SCREEN_HEIGHT, SCREEN_WIDTH } from "../Utils/dimensions";
+import CountDown from "../components/CountDown";
+import ChatScreen from "../components/ChatScreen";
+import Ranks from "../components/Ranks";
+import ImagePreview from "../components/ImagePreview";
+import { SvgXml } from "react-native-svg";
+import { updateGameStatus } from "../Data/rooms";
+import CountdownTimer from "../components/CountdownTimer";
+
+const GameScreen = () => {
+  const appContext = useAppContext();
+  const { user, room, inRoom } = appContext;
+  const [isBackgroundMusicPlaying, setIsBackgroundMusicPlaying] =
+    useState(false);
+
+  const [selectedCategory, setSelectedCategory] = useState();
+  const [selectedWord, setSelectedWord] = useState();
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [timerStatus, setTimerStatus] = useState("standby");
+  const [timerData, setTimerData] = useState(null);
+  const [currentTimeServer, setCurrentTimeServer] = useState(null);
+  const [theCurrentPlayer, setTheCurrentPlayer] = useState(null);
+  const [startISODate, setStartISODate] = useState(null);
+
+  /* useEffect(() => {
+    if (isDrawing && timerStatus !== "start") {
+      setTimerStatus("start");
+    }
+  }, [isDrawing]); */
+
+  const logGameStatus = async (gameData) => {
+    await updateGameStatus(room.id, gameData);
+  };
+
+  const onTimerReset = () => {
+    setTimerStatus("reset");
+  };
+
+  // This is where we update the round information
+  useEffect(() => {
+    console.log("🚀 ~ useEffect ~ timerData:", timerData, timerData?.status);
+    console.log("🚀 ~ useEffect ~ timerStatus:", timerStatus);
+    if (timerData?.status == "timeout") {
+      onTimerReset();
+    }
+
+    //if (!currentTimeServer?.isTimeServer) return
+    /* if (timerData?.round > 0 && inRoom?.length > 0) {
+      if (timerData?.round <= 0 || timerData?.round > inRoom?.length) {
+        setTimerStatus("reset");
+        console.log("🚀 ~ useEffect ~ timerData?.round:", {
+          round: timerData?.round,
+          status: "game over",
+        });
+
+        logGameStatus({
+          status: "game-over",
+          gameStatus: {
+            status: "game-over",
+            round: timerData?.round - 1,
+            numberOfPlayers: inRoom?.length,
+          },
+        });
+      } else {
+        const turnPlayer = inRoom[timerData?.round - 1];
+        console.log("🚀 ~ useEffect ~ inRoom:", turnPlayer);
+        logGameStatus({
+          round: {
+            round: timerData?.round - 1,
+            player: turnPlayer,
+          },
+        });
+      }
+    } */
+  }, [timerData]);
+
+  const [viewWidth, setViewWidth] = useState(0);
+  const [viewHeight, setViewHeight] = useState(0);
+
+  const handleLayout = (event) => {
+    const { width, height } = event.nativeEvent.layout;
+    setViewWidth(width);
+    setViewHeight(height);
+  };
+
+  useEffect(() => {
+    if (inRoom && inRoom.length > 0) {
+      const firstPlayer = inRoom[0];
+      if (firstPlayer?.id === user?.id) {
+        setCurrentTimeServer({
+          player: firstPlayer,
+          isTimeServer: true,
+        });
+      } else {
+        setCurrentTimeServer({
+          player: firstPlayer,
+          isTimeServer: false,
+        });
+      }
+      // for Testing only
+      /* if (room?.isStarted) {
+        const firstPlayer = inRoom.find((player) => player.id == user?.id);
+        console.log("🚀 ~ useEffect ~ inRoom + user:", inRoom, user?.id);
+        console.log("🚀 ~ useEffect ~ firstPlayer:", firstPlayer);
+        if (firstPlayer) {
+          setCurrentTimeServer({
+            player: firstPlayer,
+            isTimeServer: true,
+          });
+        }
+      } */
+    }
+  }, [inRoom, room]);
+
+  useEffect(() => {
+    if (currentTimeServer?.isTimeServer) {
+      setTimerStatus("start");
+    }
+  }, [currentTimeServer]);
+
+  useEffect(() => {
+    if (room?.isStarted) {
+      if (room?.round?.player?.id) {
+        setTheCurrentPlayer({
+          player: room?.round?.player,
+          isCurrentUserPlayer: room?.round?.player?.id === user?.id,
+        });
+      } else {
+        setTheCurrentPlayer(null);
+      }
+    } else {
+      setTheCurrentPlayer(null);
+    }
+  }, [room]);
+
+  const onTriggerTimer = () => {
+    if (timerStatus == "standby") {
+      setTimerStatus("start");
+      setStartISODate(new Date(new Date().getTime() + 120000).toISOString());
+    }
+    if (timerStatus == "start") onTimerReset();
+  };
+
+  useEffect(() => {
+    if (timerStatus == "reset") {
+      setTimerStatus("start");
+      setStartISODate(new Date(new Date().getTime() + 120000).toISOString());
+    }
+  }, [timerStatus]);
+
+  const StartGameUI = () => {
+    return (
+      <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, flexDirection: "row" }}>
+          <Surface
+            style={{
+              padding: 10,
+              borderRadius: 10,
+              marginLeft: 10,
+              maxWidth: 200,
+              paddingHorizontal: 20,
+            }}
+          >
+            <Spacer size={20} />
+            <CountDown
+              trigger={timerStatus}
+              setTrigger={setTimerStatus}
+              returnData={setTimerData}
+            />
+            <Spacer size={20} />
+            <View>
+              <Subheading style={{ color: "black" }}>
+                Choose a category
+              </Subheading>
+              <View style={{ height: 50 }}>
+                <Picker
+                  style={{
+                    backgroundColor: "white",
+                    borderWidth: 2,
+                    borderColor: "black",
+                    borderRadius: 10,
+                    flex: 1,
+                  }}
+                  placeholder="Choose a category"
+                  selectedValue={selectedCategory}
+                  onValueChange={(itemValue, itemIndex) =>
+                    setSelectedCategory(itemValue)
+                  }
+                >
+                  <Picker.Item label="English" value="EN" />
+                  <Picker.Item label="Bisaya" value="BS" />
+                  <Picker.Item label="Filipino" value="FL" />
+                </Picker>
+              </View>
+            </View>
+
+            <View>
+              <Subheading style={{ color: "black" }}>Choose a word</Subheading>
+              <View style={{ height: 50 }}>
+                <Picker
+                  style={{
+                    backgroundColor: "white",
+                    borderWidth: 2,
+                    borderColor: "black",
+                    borderRadius: 10,
+                    flex: 1,
+                  }}
+                  placeholder="Choose a word"
+                  selectedValue={selectedWord}
+                  onValueChange={(itemValue, itemIndex) =>
+                    setSelectedWord(itemValue)
+                  }
+                >
+                  <Picker.Item label="English" value="EN" />
+                  <Picker.Item label="Bisaya" value="BS" />
+                  <Picker.Item label="Filipino" value="FL" />
+                </Picker>
+              </View>
+            </View>
+            <Spacer size={20} />
+            {theCurrentPlayer?.isCurrentUserPlayer ? (
+              <Headline style={{ fontWeight: "bold", textAlign: "center" }}>
+                Your turn!
+              </Headline>
+            ) : theCurrentPlayer?.player?.id ? (
+              <Subheading style={{ textAlign: "center" }}>
+                {theCurrentPlayer?.player?.name} is drawing.
+              </Subheading>
+            ) : (
+              <Subheading style={{ textAlign: "center" }}>
+                Waiting for the next player...
+              </Subheading>
+            )}
+          </Surface>
+          <View style={{ flex: 1 }}>
+            <Surface
+              style={{
+                padding: 5,
+                borderRadius: 10,
+                minHeight: SCREEN_HEIGHT,
+                marginHorizontal: 10,
+                overflow: "hidden",
+                position: "relative",
+                flex: 1,
+                justifyContent: "flex-end",
+              }}
+            >
+              {theCurrentPlayer?.isCurrentUserPlayer ? (
+                <View
+                  style={{
+                    overflow: "hidden",
+                    position: "relative",
+                    height: "100%",
+                  }}
+                >
+                  <View
+                    style={{
+                      height: SCREEN_WIDTH / 3,
+                      width: 200,
+                      position: "absolute",
+                      right: 0,
+                      bottom: 0,
+                    }}
+                  >
+                    <ChatScreen />
+                  </View>
+                  <Canvas />
+                </View>
+              ) : (
+                <View
+                  style={{
+                    position: "relative",
+                    flexGrow: 1,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                  onLayout={handleLayout}
+                >
+                  {room?.svgContent ? (
+                    <SvgXml
+                      xml={room?.svgContent}
+                      height={viewHeight - 10}
+                      width={viewWidth - 10}
+                    />
+                  ) : (
+                    <Caption>Waiting for the next player...</Caption>
+                  )}
+                </View>
+              )}
+            </Surface>
+          </View>
+        </View>
+        <View style={{ margin: 10, borderRadius: 10, padding: 10 }}>
+          <Ranks />
+        </View>
+      </View>
+    );
+  };
+
+  const WaitingGameUi = () => {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          marginVertical: 20,
+        }}
+      >
+        <Caption>Waiting for the game to start...</Caption>
+        <Subheading>
+          {room?.max} player/s remaining to start the game!
+        </Subheading>
+        <Caption>Players in the room:</Caption>
+        {inRoom?.length > 0 &&
+          inRoom?.map((player) => (
+            <Headline key={player.id}>{player.name}</Headline>
+          ))}
+      </View>
+    );
+  };
+
+  return (
+    <ScrollView style={{ flex: 1 }} scrollEnabled={!isDrawing}>
+      <View style={{ margin: 20 }}>
+        <Headline style={{ textAlign: "center", fontWeight: "bold" }}>
+          ARTS ELEMENT EXPLORER
+        </Headline>
+      </View>
+      <Spacer size={10} />
+      <Surface
+        style={{
+          flexDirection: "row",
+          alignSelf: "flex-start",
+          paddingVertical: 10,
+          paddingHorizontal: 20,
+          borderRadius: 10,
+          marginHorizontal: 10,
+        }}
+      >
+        <Ionicons
+          name={"close-circle"}
+          size={35}
+          color="black"
+          onPress={() => {
+            appContext.logout();
+          }}
+        />
+        <View style={{ marginRight: 20 }} />
+        <Ionicons
+          name={isBackgroundMusicPlaying ? "volume-high" : "volume-mute"}
+          size={35}
+          color="black"
+          onPress={onTriggerTimer}
+        />
+      </Surface>
+      <Spacer size={10} />
+      <CountDown
+        trigger={timerStatus}
+        setTrigger={setTimerStatus}
+        returnData={setTimerData}
+      />
+      <Spacer size={10} />
+      {startISODate && <CountdownTimer isoDate={startISODate} />}
+      <Spacer size={10} />
+      {room?.isStarted ? StartGameUI() : WaitingGameUi()}
+      <Spacer size={50} />
+    </ScrollView>
+  );
+};
+
+export default GameScreen;
+
+const styles = StyleSheet.create({});

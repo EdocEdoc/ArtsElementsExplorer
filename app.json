@@ -1,0 +1,40 @@
+{
+  "scripts": {
+    "ts:check": "tsc"
+  },
+  "expo": {
+    "name": "ArtsElementsExplorer",
+    "slug": "ArtsElementsExplorer",
+    "version": "1.0.0",
+    "orientation": "landscape",
+    "icon": "./assets/ic_launcher-web.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#004369"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/ic_launcher-web.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.vagenodipa.ArtsElementsExplorer"
+    },
+    "web": {
+      "favicon": "./assets/playstore-icon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "887e1050-b434-414e-93b8-0cf638fb44af"
+      }
+    },
+    "plugins": ["expo-font"]
+  }
+}
